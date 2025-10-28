@@ -14,8 +14,11 @@ export async function generate(userMessage, sessionId = 'default_session') {
     // Add user message to conversation history
     conversationMemory.addMessage(sessionId, 'user', userMessage);
     
+    // Limit conversation history to prevent token overflow (keep last 10 messages max)
+    const limitedHistory = conversationHistory.slice(-10);
+    
     // Create a conversation key for caching (includes recent context)
-    const recentContext = conversationHistory.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join(' | ');
+    const recentContext = limitedHistory.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join(' | ');
     const conversationKey = `${sessionId}_${recentContext}_${userMessage}`;
     
     // Check cache with conversation context
@@ -28,44 +31,16 @@ export async function generate(userMessage, sessionId = 'default_session') {
 
     console.log('Generating new response with conversation context');
     
-    // Build messages array with conversation history
+    // Build messages array with limited conversation history
     const messages = [
         {
             role: 'system',
-            content: `You are an advanced AI assistant designed to provide helpful, accurate, and engaging responses. Your capabilities include:
-
-CORE BEHAVIOR:
-- Provide clear, concise, and well-structured answers
-- Use a friendly and professional tone
-- Be helpful, informative, and engaging
-- Admit when you don't know something rather than guessing
-- Ask clarifying questions when needed for better assistance
-- REMEMBER previous conversation context and refer to it when relevant
-
-RESPONSE GUIDELINES:
-- Keep responses focused and relevant to the user's question
-- Use simple, clear language without any markdown formatting
-- NO bold text, italics, or special formatting - just plain text
-- Use simple line breaks for paragraphs instead of markdown
-- Include examples or analogies when they help explain complex concepts
-- Be conversational but informative
-- Avoid unnecessary repetition or verbose explanations
-- NEVER use prefixes like "This is a reply to your message:" or similar phrases
-- Respond directly and naturally as if in a normal conversation
-- REMEMBER and reference previous parts of the conversation when relevant
-- Write in simple English without any special formatting symbols
-
-CURRENT CONTEXT:
-- Current date and time: ${new Date().toUTCString()}
-- You have access to real-time web search capabilities when needed
-- You can provide up-to-date information on current events, news, and recent developments
-
-Remember: Your goal is to be genuinely helpful while maintaining a natural, human-like conversation style with proper memory of the ongoing conversation.`,
+            content: `You are a helpful AI assistant. Provide clear, concise answers in simple English without markdown formatting. Be friendly and professional. Current time: ${new Date().toUTCString()}`,
         }
     ];
 
-    // Add conversation history to messages
-    conversationHistory.forEach(msg => {
+    // Add limited conversation history to messages
+    limitedHistory.forEach(msg => {
         messages.push({
             role: msg.role,
             content: msg.content
@@ -78,73 +53,103 @@ Remember: Your goal is to be genuinely helpful while maintaining a natural, huma
         content: userMessage,
     });
 
-    while (true) {
-        const completions = await groq.chat.completions.create({
-            messages: messages,
-            tools: [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "webSearch",
-                        "description": "you can search for information on the internet",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "query": {
-                                    "type": "string",
-                                    "description": "the search query to search on"
+    // Retry logic for rate limits
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+        try {
+            const completions = await groq.chat.completions.create({
+                messages: messages,
+                tools: [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "webSearch",
+                            "description": "Search for information on the internet",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "The search query"
+                                    }
                                 },
-                                "unit": {
-                                    "type": "string",
-                                    "enum": ["celsius", "fahrenheit"]
-                                }
-                            },
-                            "required": ["query"]
+                                "required": ["query"]
+                            }
                         }
                     }
+                ],
+                tool_choice: 'auto',
+                model: "llama-3.1-70b-versatile", // More efficient model
+                temperature: 0.1,
+                max_tokens: 1000, // Limit response length
+            });
+
+            messages.push(completions.choices[0].message);
+
+            const toolCalls = completions.choices[0].message.tool_calls;
+            if (!toolCalls) {
+                let response = completions.choices[0].message.content;
+                
+                // Remove markdown formatting
+                response = response
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold **text**
+                    .replace(/\*(.*?)\*/g, '$1') // Remove italic *text*
+                    .replace(/`(.*?)`/g, '$1') // Remove code `text`
+                    .replace(/#{1,6}\s*/g, '') // Remove headers
+                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+                    .replace(/\n\s*\n/g, '\n\n') // Clean up multiple line breaks
+                    .trim();
+                
+                // Add assistant response to conversation history
+                conversationMemory.addMessage(sessionId, 'assistant', response);
+                // Cache the response with conversation context
+                cacheService.set(conversationKey, response);
+                return response;
+            }
+
+            for (const tool of toolCalls) {
+                const functionName = tool.function.name;
+                const parameters = tool.function.arguments;
+
+                if (functionName === "webSearch") {
+                    const toolResult = await webSearch(JSON.parse(parameters));
+
+                    messages.push({
+                        tool_call_id: tool.id,
+                        role: 'tool',
+                        name: functionName,
+                        content: toolResult,
+                    });
                 }
-            ],
-            tool_choice: 'auto',
-            model: "openai/gpt-oss-120b",
-            temperature: 0,
-        });
-
-        messages.push(completions.choices[0].message);
-
-        const toolCalls = completions.choices[0].message.tool_calls;
-                if (!toolCalls) {
-                    let response = completions.choices[0].message.content;
-                    
-                    // Remove markdown formatting
-                    response = response
-                        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold **text**
-                        .replace(/\*(.*?)\*/g, '$1') // Remove italic *text*
-                        .replace(/`(.*?)`/g, '$1') // Remove code `text`
-                        .replace(/#{1,6}\s*/g, '') // Remove headers
-                        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
-                        .replace(/\n\s*\n/g, '\n\n') // Clean up multiple line breaks
-                        .trim();
-                    
-                    // Add assistant response to conversation history
-                    conversationMemory.addMessage(sessionId, 'assistant', response);
-                    // Cache the response with conversation context
-                    cacheService.set(conversationKey, response);
-                    return response;
+            }
+            
+            // If we get here, we successfully processed the request
+            break;
+            
+        } catch (error) {
+            console.error('Error calling AI:', error);
+            
+            // Handle rate limiting specifically
+            if (error.status === 429 || error.status === 413) {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
+                    console.log(`Rate limited. Retrying in ${waitTime}ms (attempt ${retryCount}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
+                } else {
+                    // Return a user-friendly error message
+                    const errorMessage = "I'm experiencing high demand right now. Please try again in a moment.";
+                    conversationMemory.addMessage(sessionId, 'assistant', errorMessage);
+                    return errorMessage;
                 }
-
-        for (const tool of toolCalls) {
-            const functionName = tool.function.name;
-            const parameters = tool.function.arguments;
-
-            if (functionName === "webSearch") {
-                const toolResult = await webSearch(JSON.parse(parameters));
-
-                messages.push({
-                    tool_call_id: tool.id,
-                    role: 'tool',
-                    name: functionName,
-                    content: toolResult,
-                });
+            } else {
+                // For other errors, return a generic message
+                const errorMessage = "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
+                conversationMemory.addMessage(sessionId, 'assistant', errorMessage);
+                return errorMessage;
             }
         }
     }

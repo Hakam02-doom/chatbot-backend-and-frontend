@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mihu AI - Your Intelligent Conversation Partner</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -1374,6 +1374,15 @@
 
 
         function App() {
+            // Dynamic API URL - works for both localhost and production
+            const getApiUrl = () => {
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    return '${getApiUrl()}';
+                } else {
+                    return window.location.origin;
+                }
+            };
+
             const [messages, setMessages] = useState([
                 {
                     id: '1',
@@ -1440,7 +1449,7 @@
             const loadChatHistory = async () => {
                 try {
                     // Load chat history for the current session
-                    const response = await fetch(`http://localhost:3001/chat/history/${user.id}?sessionId=${currentChatId}`);
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${currentChatId}`);
                     const data = await response.json();
                     
                     if (data.success && data.data.length > 0) {
@@ -1475,7 +1484,7 @@
                     // For now, we'll create a simple implementation
                     // In a real app, you'd have an endpoint to get all unique session IDs
                     // For this demo, we'll just load the current session
-                    const response = await fetch(`http://localhost:3001/chat/history/${user.id}?sessionId=${currentChatId}`);
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${currentChatId}`);
                     const data = await response.json();
                     
                     if (data.success && data.data.length > 0) {
@@ -1505,6 +1514,27 @@
                 }
             };
 
+            // Retry function for failed requests
+            const retryRequest = async (url, options, maxRetries = 3) => {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.ok) {
+                            return response;
+                        }
+                        if (i === maxRetries - 1) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    } catch (error) {
+                        if (i === maxRetries - 1) {
+                            throw error;
+                        }
+                        // Wait before retry (exponential backoff)
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                    }
+                }
+            };
+
             const handleSendMessage = async (text) => {
                 // Add user message
                 const userMessage = {
@@ -1531,8 +1561,8 @@
                 setIsTyping(true);
 
                 try {
-                    // Call backend API
-                    const response = await fetch('http://localhost:3001/ai', {
+                    // Call backend API with retry logic
+                    const response = await retryRequest(`${getApiUrl()}/ai`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1561,10 +1591,20 @@
                 } catch (error) {
                     console.error('Error calling AI API:', error);
                     
-                    // Add error message
+                    // Add user-friendly error message based on error type
+                    let errorText = "I'm experiencing technical difficulties. Please try again in a moment.";
+                    
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        errorText = "Unable to connect to the server. Please check your internet connection and try again.";
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorText = "Network error. Please check your connection and try again.";
+                    } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+                        errorText = "I'm experiencing high demand right now. Please try again in a moment.";
+                    }
+                    
                     const errorMessage = {
                         id: (Date.now() + 1).toString(),
-                        text: "Sorry, I'm having trouble connecting to the AI service. Please make sure the backend server is running on port 3001.",
+                        text: errorText,
                         isUser: false,
                     };
 
@@ -1601,7 +1641,7 @@
 
             const loadChatHistoryForSession = async (sessionId) => {
                 try {
-                    const response = await fetch(`http://localhost:3001/chat/history/${user.id}?sessionId=${sessionId}`);
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${sessionId}`);
                     const data = await response.json();
                     
                     if (data.success && data.data.length > 0) {
@@ -1660,7 +1700,7 @@
             const handleLogin = async (email, password) => {
                 try {
                     console.log('Attempting login with:', email);
-                    const response = await fetch('http://localhost:3001/auth/login', {
+                    const response = await fetch(`${getApiUrl()}/auth/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1690,7 +1730,7 @@
             const handleSignup = async (name, email, password) => {
                 try {
                     console.log('Attempting signup with:', { name, email });
-                    const response = await fetch('http://localhost:3001/auth/signup', {
+                    const response = await fetch(`${getApiUrl()}/auth/signup`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
