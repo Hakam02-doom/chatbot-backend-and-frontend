@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AI Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">AI</div>
+                    <span class="logo-text">Mihu</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active">
+                    <span>+</span>
+                    <span>New chat</span>
+                </button>
+                <button class="nav-item">
+                    <span>🔍</span>
+                    <span>Search chats</span>
+                </button>
+                <button class="nav-item">
+                    <span>📚</span>
+                    <span>Library</span>
+                </button>
+                <button class="nav-item">
+                    <span>📁</span>
+                    <span>Projects</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-section">
+                <h3 class="section-title">GPTs</h3>
+                <div class="section-items">
+                    <button class="section-item">
+                        <span>🌐</span>
+                        <span>Explore</span>
+                    </button>
+                    <button class="section-item">
+                        <span>🖼️</span>
+                        <span>image generator</span>
+                    </button>
+                    <button class="section-item">
+                        <span>C</span>
+                        <span>Canva</span>
+                    </button>
+                    <button class="section-item">
+                        <span>📄</span>
+                        <span>Assignment Helper</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">H</div>
+                    <div class="user-info">
+                        <div class="user-name">Hakam Singh</div>
+                        <div class="user-plan">Free</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="message-text">
+                                Hello! I'm your AI assistant. How can I help you today?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar">🤖</div>
+                    <div class="typing-content">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask anything" 
+                        rows="1"
+                    ></textarea>
+                    <button class="send-button" id="sendButton">
+                        <span>Send</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
