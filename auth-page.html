@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mihu AI - Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 30px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .auth-tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .password-toggle:hover {
+            color: #333;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .auth-button:active {
+            transform: translateY(0);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-button .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        .auth-button.loading .spinner {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c53030;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .success-message {
+            background: #f0fff4;
+            color: #2f855a;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            border-left: 4px solid #38a169;
+        }
+
+        .demo-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .demo-section h3 {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .demo-button {
+            flex: 1;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .demo-button:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .guest-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-color: transparent;
+        }
+
+        .guest-button:hover {
+            background: linear-gradient(135deg, #218838, #1ea080);
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .password-requirements {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .requirement {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 2px 0;
+        }
+
+        .requirement.valid {
+            color: #28a745;
+        }
+
+        .requirement.invalid {
+            color: #dc3545;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .logo h1 {
+                font-size: 2rem;
+            }
+
+            .demo-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1>Mihu AI</h1>
+            <p>Your intelligent conversation partner</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+            <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+
+        <form id="authForm" class="auth-form" onsubmit="handleSubmit(event)">
+            <div id="nameGroup" class="form-group" style="display: none;">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" class="form-input" placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+            </div>
+
+            <div id="passwordRequirements" class="password-requirements" style="display: none;">
+                <div class="requirement" id="req-length">
+                    <span>•</span>
+                    <span>At least 6 characters</span>
+                </div>
+                <div class="requirement" id="req-uppercase">
+                    <span>•</span>
+                    <span>One uppercase letter</span>
+                </div>
+                <div class="requirement" id="req-lowercase">
+                    <span>•</span>
+                    <span>One lowercase letter</span>
+                </div>
+                <div class="requirement" id="req-number">
+                    <span>•</span>
+                    <span>One number</span>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-button" id="submitButton">
+                <span class="spinner"></span>
+                <span id="buttonText">Sign In</span>
+            </button>
+        </form>
+
+        <div class="demo-section">
+            <h3>Quick Access</h3>
+            <div class="demo-buttons">
+                <button class="demo-button guest-button" onclick="continueAsGuest()">
+                    Continue as Guest
+                </button>
+                <button class="demo-button" onclick="demoLogin()">
+                    Demo Login
+                </button>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <p>By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></p>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'login';
+        let isPasswordVisible = false;
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.auth-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide name field
+            const nameGroup = document.getElementById('nameGroup');
+            if (tab === 'signup') {
+                nameGroup.style.display = 'block';
+                document.getElementById('buttonText').textContent = 'Create Account';
+            } else {
+                nameGroup.style.display = 'none';
+                document.getElementById('buttonText').textContent = 'Sign In';
+            }
+            
+            // Clear messages
+            hideMessages();
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.querySelector('.password-toggle');
+            
+            isPasswordVisible = !isPasswordVisible;
+            passwordInput.type = isPasswordVisible ? 'text' : 'password';
+            toggleButton.textContent = isPasswordVisible ? '🙈' : '👁️';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            const button = document.getElementById('submitButton');
+            const buttonText = document.getElementById('buttonText');
+            
+            if (loading) {
+                button.classList.add('loading');
+                button.disabled = true;
+                buttonText.textContent = currentTab === 'login' ? 'Signing In...' : 'Creating Account...';
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+                buttonText.textContent = currentTab === 'login' ? 'Sign In' : 'Create Account';
+            }
+        }
+
+        function validatePassword(password) {
+            const requirements = {
+                length: password.length >= 6,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password)
+            };
+
+            // Update requirement indicators
+            Object.keys(requirements).forEach(req => {
+                const element = document.getElementById(`req-${req}`);
+                if (element) {
+                    element.classList.toggle('valid', requirements[req]);
+                    element.classList.toggle('invalid', !requirements[req]);
+                }
+            });
+
+            return Object.values(requirements).every(Boolean);
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            hideMessages();
+            
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Validate required fields
+            if (!data.email || !data.password) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            if (currentTab === 'signup') {
+                if (!data.name) {
+                    showError('Please enter your full name');
+                    return;
+                }
+                
+                if (!validatePassword(data.password)) {
+                    showError('Password does not meet requirements');
+                    return;
+                }
+            }
+            
+            setLoading(true);
+            
+            if (currentTab === 'login') {
+                handleLogin(data.email, data.password);
+            } else {
+                handleSignup(data.name, data.email, data.password);
+            }
+        }
+
+        async function handleLogin(email, password) {
+            try {
+                const response = await fetch('http://localhost:3001/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Login failed');
+                }
+
+                showSuccess('Login successful! Redirecting...');
+                
+                // Store user data
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('token', data.token);
+                
+                // Redirect to main app
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function handleSignup(name, email, password) {
+            try {
+                const response = await fetch('http://localhost:3001/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Signup failed');
+                }
+
+                showSuccess('Account created successfully! Redirecting...');
+                
+                // Store user data
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('token', data.token);
+                
+                // Redirect to main app
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function continueAsGuest() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        function demoLogin() {
+            document.getElementById('email').value = 'demo@example.com';
+            document.getElementById('password').value = 'demo123';
+            handleLogin('demo@example.com', 'demo123');
+        }
+
+        // Password validation on input
+        document.getElementById('password').addEventListener('input', function() {
+            if (currentTab === 'signup') {
+                const requirements = document.getElementById('passwordRequirements');
+                requirements.style.display = 'block';
+                validatePassword(this.value);
+            }
+        });
+
+        // Check if user is already logged in
+        window.addEventListener('load', function() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>
