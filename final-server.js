@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 app.use(express.json());
 
@@ -287,12 +287,13 @@ async function startServer() {
         await database.init();
         console.log('Database initialized successfully');
         
-        app.listen(port, () => {
-            console.log(`Server listening on port ${port}`);
-            console.log(`Open http://localhost:${port} in your browser`);
-            console.log('AI backend is connected and ready!');
-            console.log('Database is ready for user management!');
-        });
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server listening on port ${port}`);
+    console.log(`Open http://localhost:${port} in your browser`);
+    console.log(`For mobile testing: http://192.168.31.23:${port}`);
+    console.log('AI backend is connected and ready!');
+    console.log('Database is ready for user management!');
+});
     } catch (error) {
         console.error('Failed to start server:', error);
         process.exit(1);
