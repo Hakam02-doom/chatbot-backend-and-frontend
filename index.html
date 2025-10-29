@@ -1,16 +1,1963 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mihu AI - Your Intelligent Conversation Partner</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        /* Responsive Design */
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background: #ffffff;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1a1d29 0%, #161920 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #282c34;
+            flex-shrink: 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #1a1d29;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #1a1d29;
+        }
+        
+        .message {
+            display: flex;
+            margin-bottom: 1rem;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .message.assistant .message-avatar {
+            background: #10b981;
+            color: white;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            word-wrap: break-word;
+        }
+        
+        .message.user .message-content {
+            background: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+        
+        .message.assistant .message-content {
+            background: #282c34;
+            color: #e2e8f0;
+            border: 1px solid #3a3f4b;
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .input-area {
+            padding: 1.5rem;
+            background: #282c34;
+            border-top: 1px solid #3a3f4b;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            padding: 1rem 1.5rem;
+            width: 100%;
+            background: #3a3f4b;
+            border: 1px solid #4a4f5b;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            resize: none;
+            outline: none;
+            transition: all 0.2s ease;
+            min-height: 48px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+        
+        .message-input::placeholder {
+            color: #94a3b8;
+        }
+        
+        .message-input:focus {
+            border-color: #6699ff;
+            background: #404550;
+            box-shadow: 0 0 0 3px rgba(102, 153, 255, 0.1);
+        }
+        
+        .send-button {
+            padding: 1rem 1.5rem;
+            background: #3a3f4b;
+            color: #e2e8f0;
+            border: 1px solid #4a4f5b;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 48px;
+            font-size: 0.875rem;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            background: #404550;
+            border-color: #6699ff;
+            color: #6699ff;
+        }
+        
+        .send-button:disabled {
+            background: #2a2d35;
+            border-color: #3a3f4b;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #6b7280;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: 100vh;
+                overflow: hidden;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #334155;
+                position: relative;
+                z-index: 10;
+            }
+            
+            .main-content {
+                height: calc(100vh - 200px);
+                overflow: hidden;
+            }
+            
+            .message-content {
+                max-width: 85%;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            .input-container {
+                padding: 0.5rem;
+                position: sticky;
+                bottom: 0;
+                background: inherit;
+            }
+            
+            .message-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+            
+            .send-button {
+                min-width: 44px; /* Minimum touch target size */
+                min-height: 44px;
+            }
+            
+            .messages-container {
+                padding: 0.75rem;
+                height: calc(100vh - 200px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .message-content {
+                max-width: 90%;
+                font-size: 14px;
+            }
+            
+            .input-container {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.25rem;
+            }
+            
+            .message-input {
+                font-size: 16px;
+                padding: 12px;
+            }
+            
+            .send-button {
+                width: 100%;
+                height: 48px;
+                font-size: 16px;
+                justify-content: center;
+            }
+            
+            .sidebar {
+                height: 60px;
+                overflow: hidden;
+            }
+            
+            .main-content {
+                height: calc(100vh - 60px);
+            }
+            
+            .messages-container {
+                height: calc(100vh - 120px);
+                padding: 0.5rem;
+            }
+        }
+        
+        /* Sidebar Styles */
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #282c34;
+        }
+        
+        .sidebar-nav {
+            padding: 1rem;
+            flex: 1;
+        }
+        
+        .nav-item {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            text-align: left;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .nav-item:hover {
+            background: #282c34;
+            color: white;
+        }
+        
+        .nav-item.active {
+            background: #6699ff;
+            color: white;
+        }
+        
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid #282c34;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #282c34;
+            border-radius: 0.5rem;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: #66cc99;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .user-info h4 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .user-info p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        
+        /* Header Styles */
+        .chat-header {
+            padding: 1rem 1.5rem;
+            background: #1a1d29;
+            border-bottom: 1px solid #282c34;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chat-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        
+        .chat-subtitle {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+        
+        /* Dark Mode Styles */
+        .dark-mode {
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        body.dark-mode {
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        html.dark-mode {
+            background: #0f172a;
+        }
+
+        #root.dark-mode {
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+        
+        .dark-mode .container {
+            background: #0f172a;
+        }
+        
+        .dark-mode .sidebar {
+            background: linear-gradient(180deg, #1a1d29 0%, #161920 100%);
+            border-right-color: #282c34;
+        }
+        
+        .dark-mode .main-content {
+            background: #0f172a;
+        }
+        
+        .dark-mode .chat-header {
+            background: #1e293b;
+            border-bottom-color: #334155;
+        }
+        
+        .dark-mode .chat-title {
+            color: #f1f5f9;
+        }
+        
+        .dark-mode .chat-subtitle {
+            color: #94a3b8;
+        }
+        
+        .dark-mode .messages-container {
+            background: #0f172a;
+        }
+        
+        .dark-mode .message.assistant .message-content {
+            background: #1e293b;
+            color: #f1f5f9;
+            border-color: #334155;
+        }
+        
+        .dark-mode .message.user .message-content {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .dark-mode .input-area {
+            background: #1a1d29;
+            border-top-color: #282c34;
+        }
+        
+        .dark-mode .message-input {
+            background: #282c34;
+            border-color: #3a3f4b;
+            color: #e2e8f0;
+        }
+        
+        .dark-mode .message-input:focus {
+            border-color: #6699ff;
+            background: #2a2d35;
+        }
+        
+        .dark-mode .message-input::placeholder {
+            color: #94a3b8;
+        }
+        
+        .dark-mode .nav-item {
+            color: #cbd5e1;
+        }
+        
+        .dark-mode .nav-item:hover {
+            background: #282c34;
+            color: white;
+        }
+        
+        .dark-mode .nav-item.active {
+            background: #6699ff;
+            color: white;
+        }
+        
+        .dark-mode .sidebar-header {
+            border-bottom-color: #282c34;
+        }
+        
+        .dark-mode .sidebar-footer {
+            border-top-color: #282c34;
+        }
+        
+        .dark-mode .user-profile {
+            background: #282c34;
+        }
+        
+        .dark-mode .user-info h4 {
+            color: #f1f5f9;
+        }
+        
+        .dark-mode .user-info p {
+            color: #94a3b8;
+        }
+        
+        .dark-mode .typing-indicator {
+            color: #94a3b8;
+        }
+        
+        .dark-mode .typing-dot {
+            background: #94a3b8;
+        }
+
+        /* Additional Dark Mode Styles */
+        .dark-mode .sidebar-header h2 {
+            color: #f1f5f9;
+        }
+
+        .dark-mode .sidebar-header p {
+            color: #94a3b8;
+        }
+
+        .dark-mode .user-menu-button {
+            color: #cbd5e1;
+        }
+
+        .dark-mode .user-menu-button:hover {
+            background: #334155;
+        }
+
+        .dark-mode .user-dropdown {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        .dark-mode .user-dropdown-item {
+            color: #cbd5e1;
+        }
+
+        .dark-mode .user-dropdown-item:hover {
+            background: #334155;
+        }
+
+        .dark-mode .send-button {
+            background: #282c34;
+            color: #e2e8f0;
+            border-color: #3a3f4b;
+        }
+
+        .dark-mode .send-button:hover {
+            background: #2a2d35;
+            border-color: #6699ff;
+            color: #6699ff;
+        }
+
+        .dark-mode .send-button:disabled {
+            background: #1a1d29;
+            border-color: #282c34;
+            color: #6b7280;
+        }
+
+        /* Chat History Dark Mode */
+        .dark-mode .chat-history-item {
+            color: #cbd5e1;
+        }
+
+        .dark-mode .chat-history-item:hover {
+            background: #334155;
+        }
+
+        .dark-mode .chat-history-item.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .dark-mode .chat-history-title {
+            color: #f1f5f9;
+        }
+
+        .dark-mode .chat-history-preview {
+            color: #94a3b8;
+        }
+
+        .dark-mode .chat-history-time {
+            color: #64748b;
+        }
+
+        .dark-mode .delete-chat-button {
+            color: #94a3b8;
+        }
+
+        .dark-mode .delete-chat-button:hover {
+            color: #ef4444;
+            background: #374151;
+        }
+
+        /* Additional Component Dark Mode Styles */
+        .dark-mode .message-avatar {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .dark-mode .message.user .message-avatar {
+            background: #10b981;
+        }
+
+        .dark-mode .typing-indicator {
+            color: #94a3b8;
+        }
+
+        .dark-mode .typing-dot {
+            background: #94a3b8;
+        }
+
+        /* Ensure all text elements have proper dark mode colors */
+        .dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6 {
+            color: #f1f5f9;
+        }
+
+        .dark-mode p, .dark-mode span, .dark-mode div {
+            color: #cbd5e1;
+        }
+
+        .dark-mode a {
+            color: #60a5fa;
+        }
+
+        .dark-mode a:hover {
+            color: #93c5fd;
+        }
+
+        /* Ensure dark mode is applied to all elements */
+        .dark-mode * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+            /* Prevent text selection on UI elements */
+            .sidebar, .message-avatar, .send-button, .nav-item {
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            
+            /* Improve touch targets */
+            .nav-item, .send-button, .user-menu-button {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Fix iOS input zoom */
+            input[type="text"], input[type="email"], input[type="password"], textarea {
+                font-size: 16px;
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+        }
+
+        /* Fix any remaining light mode elements */
+        .dark-mode input, .dark-mode textarea, .dark-mode select {
+            background: #282c34 !important;
+            color: #e2e8f0 !important;
+            border-color: #3a3f4b !important;
+        }
+
+        .dark-mode input::placeholder, .dark-mode textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+        
+        #root {
+            width: 100%;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Auth Modal Styles */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .auth-modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .dark-mode .auth-modal-content {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .dark-mode .auth-tabs {
+            border-bottom-color: #334155;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .auth-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .dark-mode .auth-tab {
+            color: #94a3b8;
+        }
+        
+        .dark-mode .auth-tab.active {
+            color: #3b82f6;
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .auth-input {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .auth-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark-mode .auth-input {
+            background: #334155;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+        
+        .dark-mode .auth-input:focus {
+            border-color: #3b82f6;
+            background: #475569;
+        }
+        
+        .auth-button {
+            padding: 0.75rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .auth-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .auth-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .auth-error {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .auth-success {
+            color: #10b981;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-menu-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            color: #cbd5e1;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .user-menu-button:hover {
+            background: #334155;
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        
+        .user-dropdown-item:hover {
+            background: #334155;
+        }
+        
+        /* Dark Mode Toggle Button */
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .dark-mode-toggle:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+        
+        .dark-mode .dark-mode-toggle {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+        
+        .dark-mode .dark-mode-toggle:hover {
+            background: #334155;
+        }
+        
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .dark-mode-toggle {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+            }
+        }
+        
+    </style>
+</head>
+<body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        function ChatMessage({ message, isUser, index }) {
+            return (
+                <div className={`message ${isUser ? 'user' : 'assistant'}`}>
+                    <div className="message-avatar">
+                        {isUser ? 'U' : 'AI'}
+                    </div>
+                    <div className="message-content">
+                        <p>{message}</p>
+                    </div>
+                </div>
+            );
+        }
+
+        function ChatInput({ onSendMessage }) {
+            const [message, setMessage] = useState('');
+            const textareaRef = useRef(null);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (message.trim()) {
+                    onSendMessage(message.trim());
+                    setMessage('');
+                    if (textareaRef.current) {
+                        textareaRef.current.style.height = 'auto';
+                    }
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                }
+            };
+
+            const adjustTextareaHeight = () => {
+                if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+                }
+            };
+
+            useEffect(() => {
+                adjustTextareaHeight();
+            }, [message]);
+
+            return (
+                <div className="input-area">
+                    <form onSubmit={handleSubmit}>
+                        <div className="input-container">
+                            <textarea
+                                ref={textareaRef}
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Type your message..."
+                                className="message-input"
+                                rows={1}
+                            />
+                            <button
+                                type="submit"
+                                disabled={!message.trim()}
+                                className="send-button"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                                Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+        }
+
+        function TypingIndicator() {
+            return (
+                <div className="typing-indicator">
+                    <span>AI is typing</span>
+                    <div className="typing-dots">
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AuthModal({ isOpen, onClose, onLogin, onSignup, isDarkMode }) {
+            const [activeTab, setActiveTab] = useState('login');
+            const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setSuccess('');
+                setLoading(true);
+
+                try {
+                    if (activeTab === 'login') {
+                        await onLogin(formData.email, formData.password);
+                        setSuccess('Login successful!');
+                    } else {
+                        await onSignup(formData.name, formData.email, formData.password);
+                        setSuccess('Account created successfully!');
+                    }
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleInputChange = (e) => {
+                setFormData(prev => ({
+                    ...prev,
+                    [e.target.name]: e.target.value
+                }));
+            };
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="auth-modal">
+                    <div className="auth-modal-content">
+                        <div className="auth-tabs">
+                            <button
+                                className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('login')}
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('signup')}
+                            >
+                                Sign Up
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="auth-form">
+                            {activeTab === 'signup' && (
+                                <input
+                                    type="text"
+                                    name="name"
+                                    placeholder="Full Name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    className="auth-input"
+                                    required
+                                />
+                            )}
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                className="auth-input"
+                                required
+                            />
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                className="auth-input"
+                                required
+                                minLength="6"
+                            />
+                            <button
+                                type="submit"
+                                className="auth-button"
+                                disabled={loading}
+                            >
+                                {loading ? 'Please wait...' : (activeTab === 'login' ? 'Sign In' : 'Sign Up')}
+                            </button>
+                        </form>
+
+                        {error && <div className="auth-error">{error}</div>}
+                        {success && <div className="auth-success">{success}</div>}
+
+                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    // Create a guest user for testing
+                                    const guestUser = {
+                                        id: 'guest',
+                                        name: 'Guest User',
+                                        email: 'guest@example.com'
+                                    };
+                                    localStorage.setItem('user', JSON.stringify(guestUser));
+                                    onClose();
+                                    window.location.reload();
+                                }}
+                                style={{
+                                    background: 'none',
+                                    border: '1px solid #d1d5db',
+                                    color: '#6b7280',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    marginRight: '0.5rem'
+                                }}
+                            >
+                                Continue as Guest
+                            </button>
+                            <button
+                                onClick={() => {
+                                    // Auto-fill demo credentials
+                                    setFormData({
+                                        email: 'demo@example.com',
+                                        password: 'demo123',
+                                        name: 'Demo User'
+                                    });
+                                    setActiveTab('login');
+                                }}
+                                style={{
+                                    background: '#10b981',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                Demo Login
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={onClose}
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                right: '1rem',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                color: '#6b7280'
+                            }}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function UserMenu({ user, onLogout, isDarkMode }) {
+            const [isOpen, setIsOpen] = useState(false);
+
+            return (
+                <div className="user-menu">
+                    <button
+                        className="user-menu-button"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
+                        <span>{user.name}</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </button>
+                    
+                    {isOpen && (
+                        <div className="user-dropdown">
+                            <div style={{ padding: '0.5rem', borderBottom: '1px solid #334155', marginBottom: '0.5rem' }}>
+                                <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f1f5f9' }}>{user.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user.email}</div>
+                            </div>
+                            <button className="user-dropdown-item" onClick={onLogout}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function Sidebar({ onNewChat, chatHistory, currentChatId, onSelectChat, onDeleteChat, user, onLogout, isDarkMode }) {
+            // Fallback user for when not logged in
+            const displayUser = user || { name: 'Guest', email: 'guest@example.com' };
+            const formatTime = (timestamp) => {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = now - date;
+                
+                if (diff < 60000) return 'Just now';
+                if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+                if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+                return date.toLocaleDateString();
+            };
+
+            return (
+                <aside className="sidebar">
+                    <div className="sidebar-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ 
+                                width: '40px', 
+                                height: '40px', 
+                                background: '#3b82f6', 
+                                borderRadius: '50%', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontWeight: '600'
+                            }}>
+                                AI
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.25rem' }}>Mihu AI</h2>
+                                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Conversation Partner</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-nav">
+                        <button
+                            onClick={onNewChat}
+                            className="nav-item active"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 4v16m8-8H4"/>
+                            </svg>
+                            New Chat
+                        </button>
+                        
+                        <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                            <h3 style={{ 
+                                fontSize: '0.875rem', 
+                                fontWeight: '600', 
+                                color: '#94a3b8', 
+                                marginBottom: '0.5rem',
+                                paddingLeft: '1rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                Recent Chats
+                            </h3>
+                            
+                            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                {chatHistory.map((chat) => (
+                                    <div
+                                        key={chat.id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            padding: '0.5rem 1rem',
+                                            marginBottom: '0.25rem',
+                                            borderRadius: '0.5rem',
+                                            cursor: 'pointer',
+                                            backgroundColor: currentChatId === chat.id ? '#3b82f6' : 'transparent',
+                                            color: currentChatId === chat.id ? 'white' : '#cbd5e1',
+                                            transition: 'all 0.2s',
+                                            position: 'relative'
+                                        }}
+                                        onClick={() => onSelectChat(chat.id)}
+                                        onMouseEnter={(e) => {
+                                            if (currentChatId !== chat.id) {
+                                                e.target.style.backgroundColor = '#334155';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (currentChatId !== chat.id) {
+                                                e.target.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
+                                    >
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ 
+                                                fontSize: '0.875rem', 
+                                                fontWeight: '500',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                marginBottom: '0.25rem'
+                                            }}>
+                                                {chat.title}
+                                            </div>
+                                            <div style={{ 
+                                                fontSize: '0.75rem', 
+                                                color: currentChatId === chat.id ? '#e2e8f0' : '#94a3b8',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}>
+                                                {chat.preview}
+                                            </div>
+                                            <div style={{ 
+                                                fontSize: '0.75rem', 
+                                                color: currentChatId === chat.id ? '#cbd5e1' : '#64748b',
+                                                marginTop: '0.25rem'
+                                            }}>
+                                                {formatTime(chat.timestamp)}
+                                            </div>
+                                        </div>
+                                        
+                                        {chat.id !== 'current' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteChat(chat.id);
+                                                }}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: currentChatId === chat.id ? '#e2e8f0' : '#94a3b8',
+                                                    cursor: 'pointer',
+                                                    padding: '0.25rem',
+                                                    borderRadius: '0.25rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    marginLeft: '0.5rem'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.backgroundColor = currentChatId === chat.id ? '#2563eb' : '#475569';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.backgroundColor = 'transparent';
+                                                }}
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6"/>
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-footer">
+                        {user ? (
+                            <UserMenu user={displayUser} onLogout={onLogout} isDarkMode={isDarkMode} />
+                        ) : (
+                            <button
+                                onClick={() => setShowAuthModal(true)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontWeight: '500',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+                                </svg>
+                                Sign In
+                            </button>
+                        )}
+                    </div>
+                </aside>
+            );
+        }
+
+
+        function App() {
+        // Dynamic API URL - works for both localhost and production
+        const getApiUrl = () => {
+            // For local development
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:3002';
+            } else if (window.location.hostname.includes('192.168.') || window.location.hostname.includes('10.') || window.location.hostname.includes('172.')) {
+                // For mobile devices on the same network
+                return `http://${window.location.hostname}:3002`;
+            } else {
+                // For production (Vercel) - use API routes
+                return window.location.origin + '/api';
+            }
+        };
+
+            const [messages, setMessages] = useState([
+                {
+                    id: '1',
+                    text: "Hello! I'm your AI assistant. How can I help you today?",
+                    isUser: false,
+                },
+            ]);
+            const [isTyping, setIsTyping] = useState(false);
+            const [isDarkMode, setIsDarkMode] = useState(() => {
+                // Check localStorage for saved preference
+                const saved = localStorage.getItem('darkMode');
+                const darkMode = saved ? JSON.parse(saved) : false;
+                return darkMode;
+            });
+            const [chatHistory, setChatHistory] = useState([
+                {
+                    id: 'current',
+                    title: 'New Chat',
+                    timestamp: Date.now(),
+                    preview: "Hello! I'm your AI assistant. How can I help you today?"
+                }
+            ]);
+            const [currentChatId, setCurrentChatId] = useState('current');
+            const [user, setUser] = useState(() => {
+                // Check localStorage for saved user
+                const saved = localStorage.getItem('user');
+                return saved ? JSON.parse(saved) : null;
+            });
+            const [showAuthModal, setShowAuthModal] = useState(false);
+
+            // Load chat history from database when user is available
+            React.useEffect(() => {
+                if (user) {
+                    loadChatHistory();
+                    loadAllChatSessions();
+                }
+            }, [user]);
+
+            // Redirect to auth page if no user
+            React.useEffect(() => {
+                if (!user) {
+                    window.location.href = '/auth';
+                }
+            }, [user]);
+
+            // Apply dark mode to body element
+            React.useEffect(() => {
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.classList.remove('dark-mode');
+                }
+            }, [isDarkMode]);
+
+            // Apply dark mode on initial load
+            React.useEffect(() => {
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.classList.remove('dark-mode');
+                }
+            }, []);
+
+            const loadChatHistory = async () => {
+                try {
+                    // Load chat history for the current session
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${currentChatId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.length > 0) {
+                        // Load the messages for the current chat
+                        const messages = data.data.map((msg, index) => ({
+                            id: `${currentChatId}_${index}`,
+                            text: msg.message,
+                            isUser: msg.is_user === 1
+                        }));
+                        
+                        setMessages(messages);
+                        
+                        // Update the current chat preview
+                        const lastMessage = data.data[data.data.length - 1];
+                        setChatHistory(prev => prev.map(chat => 
+                            chat.id === currentChatId 
+                                ? { 
+                                    ...chat, 
+                                    preview: lastMessage.message.length > 50 ? lastMessage.message.substring(0, 50) + '...' : lastMessage.message,
+                                    timestamp: new Date(lastMessage.created_at).getTime()
+                                  }
+                                : chat
+                        ));
+                    }
+                } catch (error) {
+                    console.error('Error loading chat history:', error);
+                }
+            };
+
+            const loadAllChatSessions = async () => {
+                try {
+                    // For now, we'll create a simple implementation
+                    // In a real app, you'd have an endpoint to get all unique session IDs
+                    // For this demo, we'll just load the current session
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${currentChatId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.length > 0) {
+                        // Group messages by session and create chat history entries
+                        const sessions = {};
+                        data.data.forEach(msg => {
+                            if (!sessions[currentChatId]) {
+                                sessions[currentChatId] = {
+                                    id: currentChatId,
+                                    title: 'Chat Session',
+                                    timestamp: new Date(msg.created_at).getTime(),
+                                    preview: msg.message.length > 50 ? msg.message.substring(0, 50) + '...' : msg.message
+                                };
+                            }
+                        });
+                        
+                        const sessionList = Object.values(sessions);
+                        if (sessionList.length > 0) {
+                            setChatHistory(prev => {
+                                const existing = prev.filter(chat => chat.id !== currentChatId);
+                                return [...sessionList, ...existing];
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading chat sessions:', error);
+                }
+            };
+
+            // Retry function for failed requests
+            const retryRequest = async (url, options, maxRetries = 3) => {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.ok) {
+                            return response;
+                        }
+                        if (i === maxRetries - 1) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    } catch (error) {
+                        if (i === maxRetries - 1) {
+                            throw error;
+                        }
+                        // Wait before retry (exponential backoff)
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                    }
+                }
+            };
+
+            const handleSendMessage = async (text) => {
+                // Add user message
+                const userMessage = {
+                    id: Date.now().toString(),
+                    text,
+                    isUser: true,
+                };
+                setMessages((prev) => [...prev, userMessage]);
+
+                // Update chat history with new message preview
+                const updatedHistory = chatHistory.map(chat => 
+                    chat.id === currentChatId 
+                        ? { 
+                            ...chat, 
+                            preview: text.length > 50 ? text.substring(0, 50) + '...' : text,
+                            timestamp: Date.now()
+                          }
+                        : chat
+                );
+                setChatHistory(updatedHistory);
+                localStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
+
+                // Show typing indicator
+                setIsTyping(true);
+
+                try {
+                    
+                    // Call backend API with retry logic
+                    const response = await retryRequest(`${getApiUrl()}/ai`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            message: text,
+                            sessionId: currentChatId, // Use current chat ID as session ID
+                            userId: user?.id // Include user ID for database storage
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // Add AI response
+                    const aiMessage = {
+                        id: (Date.now() + 1).toString(),
+                        text: data.reply,
+                        isUser: false,
+                    };
+
+                    setMessages((prev) => [...prev, aiMessage]);
+                } catch (error) {
+                    console.error('Error calling AI API:', error);
+                    
+                    // Add user-friendly error message based on error type
+                    let errorText = "I'm experiencing technical difficulties. Please try again in a moment.";
+                    
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        errorText = "Unable to connect to the server. Please check your internet connection and try again.";
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorText = "Network error. Please check your connection and try again.";
+                    } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+                        errorText = "I'm experiencing high demand right now. Please try again in a moment.";
+                    }
+                    
+                    const errorMessage = {
+                        id: (Date.now() + 1).toString(),
+                        text: errorText,
+                        isUser: false,
+                    };
+
+                    setMessages((prev) => [...prev, errorMessage]);
+                } finally {
+                    setIsTyping(false);
+                }
+            };
+
+            const handleNewChat = () => {
+                const newChatId = Date.now().toString();
+                const newChat = {
+                    id: newChatId,
+                    title: 'New Chat',
+                    timestamp: Date.now(),
+                    preview: 'New conversation started! How can I assist you?'
+                };
+                
+                setChatHistory(prev => [newChat, ...prev]);
+                setCurrentChatId(newChatId);
+                setMessages([
+                    {
+                        id: Date.now().toString(),
+                        text: "New conversation started! How can I assist you?",
+                        isUser: false,
+                    },
+                ]);
+                
+                // Load chat history for the new chat session
+                if (user) {
+                    loadChatHistoryForSession(newChatId);
+                }
+            };
+
+            const loadChatHistoryForSession = async (sessionId) => {
+                try {
+                    const response = await fetch(`${getApiUrl()}/chat/history/${user.id}?sessionId=${sessionId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.data.length > 0) {
+                        // Convert database messages to display format
+                        const messages = data.data.map((msg, index) => ({
+                            id: `${sessionId}_${index}`,
+                            text: msg.message,
+                            isUser: msg.is_user === 1
+                        }));
+                        
+                        setMessages(messages);
+                    }
+                } catch (error) {
+                    console.error('Error loading chat history for session:', error);
+                }
+            };
+
+            const handleSelectChat = (chatId) => {
+                setCurrentChatId(chatId);
+                
+                // Load chat history for the selected chat session
+                if (user) {
+                    loadChatHistoryForSession(chatId);
+                } else {
+                    // Fallback for guest users
+                    setMessages([
+                        {
+                            id: '1',
+                            text: `Switched to chat: ${chatHistory.find(chat => chat.id === chatId)?.title || 'Unknown'}`,
+                            isUser: false,
+                        },
+                    ]);
+                }
+            };
+
+            const handleDeleteChat = (chatId) => {
+                if (chatId === 'current') return; // Don't delete current chat
+                
+                const updatedHistory = chatHistory.filter(chat => chat.id !== chatId);
+                setChatHistory(updatedHistory);
+                localStorage.setItem('chatHistory', JSON.stringify(updatedHistory));
+                
+                // If we deleted the current chat, switch to the first available one
+                if (currentChatId === chatId && updatedHistory.length > 0) {
+                    setCurrentChatId(updatedHistory[0].id);
+                }
+            };
+
+            const toggleDarkMode = () => {
+                const newDarkMode = !isDarkMode;
+                setIsDarkMode(newDarkMode);
+                // Save preference to localStorage
+                localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+            };
+
+            const handleLogin = async (email, password) => {
+                try {
+                    console.log('Attempting login with:', email);
+                    const response = await fetch(`${getApiUrl()}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password }),
+                    });
+
+                    const data = await response.json();
+                    console.log('Login response:', data);
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Login failed');
+                    }
+
+                    console.log('Login successful, updating user state');
+                    setUser(data.user);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    setShowAuthModal(false);
+                    console.log('User state updated, modal closed');
+                } catch (error) {
+                    console.error('Login error:', error);
+                    throw new Error(error.message);
+                }
+            };
+
+            const handleSignup = async (name, email, password) => {
+                try {
+                    console.log('Attempting signup with:', { name, email });
+                    const response = await fetch(`${getApiUrl()}/auth/signup`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name, email, password }),
+                    });
+
+                    const data = await response.json();
+                    console.log('Signup response:', data);
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Signup failed');
+                    }
+
+                    console.log('Signup successful, updating user state');
+                    setUser(data.user);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    setShowAuthModal(false);
+                    console.log('User state updated, modal closed');
+                } catch (error) {
+                    console.error('Signup error:', error);
+                    throw new Error(error.message);
+                }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                setShowAuthModal(true);
+            };
+
+            return (
+                <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}>
+                    {/* Dark Mode Toggle */}
+                    <button 
+                        className="dark-mode-toggle" 
+                        onClick={toggleDarkMode}
+                        title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                        {isDarkMode ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        )}
+                    </button>
+
+                    {/* Sidebar */}
+                    <Sidebar 
+                        onNewChat={handleNewChat}
+                        chatHistory={chatHistory}
+                        currentChatId={currentChatId}
+                        onSelectChat={handleSelectChat}
+                        onDeleteChat={handleDeleteChat}
+                        user={user}
+                        onLogout={handleLogout}
+                        isDarkMode={isDarkMode}
+                    />
+
+                    {/* Main Chat Area */}
+                    <div className="main-content">
+                        {/* Header */}
+                        <div className="chat-header">
+                            <div>
+                                <h1 className="chat-title">Mihu AI</h1>
+                                <p className="chat-subtitle">Your intelligent conversation partner</p>
+                            </div>
+                        </div>
+
+                        {/* Chat Area */}
+                        <div className="chat-area">
+                            {/* Messages */}
+                            <div className="messages-container">
+                                {messages.map((message, index) => (
+                                    <ChatMessage
+                                        key={message.id}
+                                        message={message.text}
+                                        isUser={message.isUser}
+                                        index={index}
+                                    />
+                                ))}
+                                {isTyping && (
+                                    <div className="message assistant">
+                                        <div className="message-avatar">AI</div>
+                                        <div className="message-content">
+                                            <TypingIndicator />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Input */}
+                            <ChatInput onSendMessage={handleSendMessage} />
+                        </div>
+                    </div>
+
+                    {/* Auth Modal */}
+                    <AuthModal 
+                        isOpen={showAuthModal}
+                        onClose={() => {
+                            console.log('Closing auth modal');
+                            setShowAuthModal(false);
+                        }}
+                        onLogin={handleLogin}
+                        onSignup={handleSignup}
+                        isDarkMode={isDarkMode}
+                    />
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
 </html>
