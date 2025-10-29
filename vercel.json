@@ -12,9 +12,6 @@
       "dest": "final-server.js"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "functions": {
     "final-server.js": {
       "maxDuration": 30
