@@ -81,7 +81,7 @@ export async function generate(userMessage, sessionId = 'default_session') {
                     }
                 ],
                 tool_choice: 'auto',
-                model: "llama-3.1-70b-versatile", // More efficient model
+                model: "openai/gpt-oss-120b", // OpenAI OSS model
                 temperature: 0.1,
                 max_tokens: 1000, // Limit response length
             });
@@ -130,6 +130,11 @@ export async function generate(userMessage, sessionId = 'default_session') {
             
         } catch (error) {
             console.error('Error calling AI:', error);
+            console.error('Error details:', {
+                status: error.status,
+                message: error.message,
+                code: error.code
+            });
             
             // Handle rate limiting specifically
             if (error.status === 429 || error.status === 413) {

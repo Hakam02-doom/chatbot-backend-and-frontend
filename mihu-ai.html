@@ -250,6 +250,7 @@
             .container {
                 flex-direction: column;
                 height: 100vh;
+                overflow: hidden;
             }
             
             .sidebar {
@@ -257,38 +258,83 @@
                 height: auto;
                 border-right: none;
                 border-bottom: 1px solid #334155;
+                position: relative;
+                z-index: 10;
             }
             
             .main-content {
                 height: calc(100vh - 200px);
+                overflow: hidden;
             }
             
             .message-content {
                 max-width: 85%;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
             }
             
             .input-container {
-                padding: 0 0.5rem;
+                padding: 0.5rem;
+                position: sticky;
+                bottom: 0;
+                background: inherit;
+            }
+            
+            .message-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+            
+            .send-button {
+                min-width: 44px; /* Minimum touch target size */
+                min-height: 44px;
             }
             
             .messages-container {
                 padding: 0.75rem;
+                height: calc(100vh - 200px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
             }
         }
         
         @media (max-width: 480px) {
             .message-content {
                 max-width: 90%;
+                font-size: 14px;
             }
             
             .input-container {
                 flex-direction: column;
                 gap: 0.5rem;
+                padding: 0.25rem;
+            }
+            
+            .message-input {
+                font-size: 16px;
+                padding: 12px;
             }
             
             .send-button {
                 width: 100%;
+                height: 48px;
+                font-size: 16px;
                 justify-content: center;
+            }
+            
+            .sidebar {
+                height: 60px;
+                overflow: hidden;
+            }
+            
+            .main-content {
+                height: calc(100vh - 60px);
+            }
+            
+            .messages-container {
+                height: calc(100vh - 120px);
+                padding: 0.5rem;
             }
         }
         
@@ -629,6 +675,49 @@
         .dark-mode a:hover {
             color: #93c5fd;
         }
+
+        /* Ensure dark mode is applied to all elements */
+        .dark-mode * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+            /* Prevent text selection on UI elements */
+            .sidebar, .message-avatar, .send-button, .nav-item {
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            
+            /* Improve touch targets */
+            .nav-item, .send-button, .user-menu-button {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Fix iOS input zoom */
+            input[type="text"], input[type="email"], input[type="password"], textarea {
+                font-size: 16px;
+                -webkit-appearance: none;
+                border-radius: 8px;
+            }
+        }
+
+        /* Fix any remaining light mode elements */
+        .dark-mode input, .dark-mode textarea, .dark-mode select {
+            background: #282c34 !important;
+            color: #e2e8f0 !important;
+            border-color: #3a3f4b !important;
+        }
+
+        .dark-mode input::placeholder, .dark-mode textarea::placeholder {
+            color: #94a3b8 !important;
+        }
         
         #root {
             width: 100%;
@@ -834,6 +923,8 @@
             justify-content: center;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
+            opacity: 1;
+            visibility: visible;
         }
         
         .dark-mode-toggle:hover {
@@ -1376,9 +1467,14 @@
         function App() {
             // Dynamic API URL - works for both localhost and production
             const getApiUrl = () => {
+                // For local development
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    return '${getApiUrl()}';
+                    return 'http://localhost:3002';
+                } else if (window.location.hostname.includes('192.168.') || window.location.hostname.includes('10.') || window.location.hostname.includes('172.')) {
+                    // For mobile devices on the same network
+                    return `http://${window.location.hostname}:3002`;
                 } else {
+                    // For production (Vercel, etc.) - use the same origin
                     return window.location.origin;
                 }
             };
@@ -1394,7 +1490,8 @@
             const [isDarkMode, setIsDarkMode] = useState(() => {
                 // Check localStorage for saved preference
                 const saved = localStorage.getItem('darkMode');
-                return saved ? JSON.parse(saved) : false;
+                const darkMode = saved ? JSON.parse(saved) : false;
+                return darkMode;
             });
             const [chatHistory, setChatHistory] = useState([
                 {
@@ -1443,6 +1540,9 @@
                 if (isDarkMode) {
                     document.body.classList.add('dark-mode');
                     document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.documentElement.classList.remove('dark-mode');
                 }
             }, []);
 
@@ -1561,6 +1661,7 @@
                 setIsTyping(true);
 
                 try {
+                    
                     // Call backend API with retry logic
                     const response = await retryRequest(`${getApiUrl()}/ai`, {
                         method: 'POST',

@@ -7,7 +7,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3002;
+
+// Check for required environment variables in production
+if (process.env.NODE_ENV === 'production') {
+    const requiredEnvVars = ['GROQ_API_KEY', 'JWT_SECRET'];
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        console.error('❌ Missing required environment variables:', missingVars);
+        console.error('Please set these variables in your Vercel dashboard');
+    }
+}
 
 app.use(express.json());
 
@@ -33,6 +44,17 @@ app.use((req, res, next) => {
 app.get('/auth', (req, res) => {
     console.log('Serving auth-page.html');
     res.sendFile(path.join(__dirname, 'auth-page.html'));
+});
+
+// Test endpoint for debugging
+app.get('/test', (req, res) => {
+    res.json({
+        status: 'ok',
+        environment: process.env.NODE_ENV || 'development',
+        hasGroqKey: !!process.env.GROQ_API_KEY,
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Main app route

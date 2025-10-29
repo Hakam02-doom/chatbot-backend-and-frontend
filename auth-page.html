@@ -390,9 +390,14 @@
     <script>
         // Dynamic API URL - works for both localhost and production
         function getApiUrl() {
+            // For local development
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return 'http://localhost:3001';
+                return 'http://localhost:3002';
+            } else if (window.location.hostname.includes('192.168.') || window.location.hostname.includes('10.') || window.location.hostname.includes('172.')) {
+                // For mobile devices on the same network
+                return `http://${window.location.hostname}:3002`;
             } else {
+                // For production (Vercel, etc.) - use the same origin
                 return window.location.origin;
             }
         }
