@@ -66,7 +66,7 @@ app.get('/test', (req, res) => {
 // Debug endpoint to test AI directly
 app.get('/debug-ai', async (req, res) => {
     try {
-        const { generate } = await import('./chatbot.js');
+        const { generate } = await import('./simple-chatbot.js');
         const result = await generate('test message', 'debug');
         res.json({
             success: true,
@@ -309,8 +309,8 @@ app.post('/ai', async (req, res) => {
             await database.saveChatMessage(userId, sessionId, message, true);
         }
         
-        // Import and call the real AI function
-        const { generate } = await import('./chatbot.js');
+        // Import and call the simple AI function
+        const { generate } = await import('./simple-chatbot.js');
         const result = await generate(message, sessionId);
         
         // Save AI response to database if userId is provided
