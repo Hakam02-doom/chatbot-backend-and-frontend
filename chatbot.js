@@ -16,17 +16,26 @@ import { conversationMemory } from './conversationMemory.js';
     }
 })();
 
-const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Fixed: apikey -> apiKey
+// Initialize with fallback handling
+const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY || 'fallback' });
+let groq;
+
+try {
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+} catch (error) {
+    console.error('Failed to initialize Groq client:', error);
+    groq = null;
+}
 export async function generate(userMessage, sessionId = 'default_session') {
-    // Check if API key is available
-    if (!process.env.GROQ_API_KEY) {
-        console.error('❌ GROQ_API_KEY not found in environment variables');
+    // Check if API key is available and groq client is initialized
+    if (!process.env.GROQ_API_KEY || !groq) {
+        console.error('❌ GROQ_API_KEY not found or Groq client not initialized');
         console.error('Environment check:', {
             NODE_ENV: process.env.NODE_ENV,
             VERCEL: process.env.VERCEL,
             hasGroqKey: !!process.env.GROQ_API_KEY,
-            groqKeyLength: process.env.GROQ_API_KEY?.length || 0
+            groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
+            groqClientInitialized: !!groq
         });
         return "I'm currently experiencing technical difficulties. Please check that the API key is properly configured in the environment variables.";
     }

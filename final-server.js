@@ -56,8 +56,31 @@ app.get('/test', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         hasGroqKey: !!process.env.GROQ_API_KEY,
         hasJwtSecret: !!process.env.JWT_SECRET,
+        groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
+        groqKeyStart: process.env.GROQ_API_KEY?.substring(0, 10) || 'not found',
+        isVercel: !!process.env.VERCEL,
         timestamp: new Date().toISOString()
     });
+});
+
+// Debug endpoint to test AI directly
+app.get('/debug-ai', async (req, res) => {
+    try {
+        const { generate } = await import('./chatbot.js');
+        const result = await generate('test message', 'debug');
+        res.json({
+            success: true,
+            result: result,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.json({
+            success: false,
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // Main app route
