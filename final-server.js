@@ -17,6 +17,9 @@ if (process.env.NODE_ENV === 'production') {
     if (missingVars.length > 0) {
         console.error('❌ Missing required environment variables:', missingVars);
         console.error('Please set these variables in your Vercel dashboard');
+        console.error('App will continue with limited functionality');
+    } else {
+        console.log('✅ All environment variables loaded successfully');
     }
 }
 

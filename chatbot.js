@@ -8,6 +8,12 @@ import { conversationMemory } from './conversationMemory.js';
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 const groq = new Groq({apikey: process.env.GROQ_API_KEY});
 export async function generate(userMessage, sessionId = 'default_session') {
+    // Check if API key is available
+    if (!process.env.GROQ_API_KEY) {
+        console.error('❌ GROQ_API_KEY not found in environment variables');
+        return "I'm currently experiencing technical difficulties. Please check that the API key is properly configured in the environment variables.";
+    }
+    
     // Get conversation history
     const conversationHistory = conversationMemory.getConversationContext(sessionId);
     
