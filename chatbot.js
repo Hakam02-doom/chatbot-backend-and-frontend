@@ -1,18 +1,37 @@
 import readline from 'node:readline/promises'
-import 'dotenv/config';
 import Groq from 'groq-sdk';
 import { tavily } from '@tavily/core';
 import { cacheService } from './cacheService.js';
 import { conversationMemory } from './conversationMemory.js';
 
+// Load dotenv only in local development (Vercel provides env vars automatically)
+// Using dynamic import to avoid top-level await issues
+(async () => {
+    if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+        try {
+            await import('dotenv/config');
+        } catch (e) {
+            // dotenv not available, that's fine
+        }
+    }
+})();
+
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
-const groq = new Groq({apikey: process.env.GROQ_API_KEY});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Fixed: apikey -> apiKey
 export async function generate(userMessage, sessionId = 'default_session') {
     // Check if API key is available
     if (!process.env.GROQ_API_KEY) {
         console.error('❌ GROQ_API_KEY not found in environment variables');
+        console.error('Environment check:', {
+            NODE_ENV: process.env.NODE_ENV,
+            VERCEL: process.env.VERCEL,
+            hasGroqKey: !!process.env.GROQ_API_KEY,
+            groqKeyLength: process.env.GROQ_API_KEY?.length || 0
+        });
         return "I'm currently experiencing technical difficulties. Please check that the API key is properly configured in the environment variables.";
     }
+    
+    console.log('✅ GROQ_API_KEY found, length:', process.env.GROQ_API_KEY.length);
     
     // Get conversation history
     const conversationHistory = conversationMemory.getConversationContext(sessionId);
