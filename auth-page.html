@@ -388,6 +388,15 @@
     </div>
 
     <script>
+        // Dynamic API URL - works for both localhost and production
+        function getApiUrl() {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:3001';
+            } else {
+                return window.location.origin;
+            }
+        }
+
         let currentTab = 'login';
         let isPasswordVisible = false;
 
@@ -513,7 +522,7 @@
 
         async function handleLogin(email, password) {
             try {
-                const response = await fetch('http://localhost:3001/auth/login', {
+                const response = await fetch(`${getApiUrl()}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -539,7 +548,16 @@
                 }, 1500);
                 
             } catch (error) {
-                showError(error.message);
+                console.error('Auth error:', error);
+                
+                // Better error messages based on error type
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showError('Unable to connect to the server. Please check your internet connection.');
+                } else if (error.message.includes('Failed to fetch')) {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError(error.message || 'Authentication failed. Please try again.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -547,7 +565,7 @@
 
         async function handleSignup(name, email, password) {
             try {
-                const response = await fetch('http://localhost:3001/auth/signup', {
+                const response = await fetch(`${getApiUrl()}/auth/signup`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -573,7 +591,16 @@
                 }, 1500);
                 
             } catch (error) {
-                showError(error.message);
+                console.error('Auth error:', error);
+                
+                // Better error messages based on error type
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showError('Unable to connect to the server. Please check your internet connection.');
+                } else if (error.message.includes('Failed to fetch')) {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError(error.message || 'Authentication failed. Please try again.');
+                }
             } finally {
                 setLoading(false);
             }
