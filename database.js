@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fallbackDatabase } from './database-fallback.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,7 @@ const __dirname = path.dirname(__filename);
 class Database {
     constructor() {
         this.db = null;
+        this.useFallback = false;
         this.jwtSecret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
     }
 
@@ -17,11 +19,18 @@ class Database {
         return new Promise((resolve, reject) => {
             this.db = new sqlite3.Database(path.join(__dirname, 'users.db'), (err) => {
                 if (err) {
-                    console.error('Error opening database:', err);
-                    reject(err);
+                    console.error('Error opening SQLite database:', err);
+                    console.log('Falling back to in-memory database');
+                    this.useFallback = true;
+                    fallbackDatabase.init().then(resolve).catch(reject);
                 } else {
                     console.log('Connected to SQLite database');
-                    this.createTables().then(resolve).catch(reject);
+                    this.createTables().then(resolve).catch((createErr) => {
+                        console.error('Error creating SQLite tables:', createErr);
+                        console.log('Falling back to in-memory database');
+                        this.useFallback = true;
+                        fallbackDatabase.init().then(resolve).catch(reject);
+                    });
                 }
             });
         });
@@ -78,6 +87,10 @@ class Database {
     }
 
     async createUser(name, email, password) {
+        if (this.useFallback) {
+            return fallbackDatabase.createUser(name, email, password);
+        }
+
         return new Promise(async (resolve, reject) => {
             try {
                 // Check if user already exists
@@ -97,7 +110,12 @@ class Database {
 
                 this.db.run(sql, [name, email, passwordHash], function(err) {
                     if (err) {
-                        reject(err);
+                        console.error('SQLite error, falling back to in-memory database');
+                        this.useFallback = true;
+                        fallbackDatabase.createUser(name, email, password)
+                            .then(resolve)
+                            .catch(reject);
+                        return;
                     } else {
                         resolve({
                             id: this.lastID,
