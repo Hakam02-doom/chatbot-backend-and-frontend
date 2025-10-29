@@ -13,14 +13,52 @@ export default async function handler(req, res) {
         return;
     }
     
-    // Get the path from the request
-    const { pathname } = new URL(req.url, `http://${req.headers.host}`);
-    console.log('Request:', { method: req.method, url: req.url, pathname });
+    // In Vercel, req.url might be just the path after /api/ or the full path
+    // Let's handle both cases
+    let path = req.url || '';
+    
+    // Remove query string if present
+    const pathWithoutQuery = path.split('?')[0];
+    
+    // Normalize path - remove leading slash if present
+    const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery.slice(1) : pathWithoutQuery;
+    
+    // Handle different path formats
+    const isTestPath = normalizedPath === 'test' || normalizedPath === 'api/test' || pathWithoutQuery === '/api/test' || pathWithoutQuery === '/test';
+    const isAiPath = normalizedPath === 'ai' || normalizedPath === 'api/ai' || pathWithoutQuery === '/api/ai' || pathWithoutQuery === '/ai';
+    const isDebugPath = normalizedPath === 'debug-ai' || normalizedPath === 'api/debug-ai' || pathWithoutQuery === '/api/debug-ai' || pathWithoutQuery === '/debug-ai';
+    
+    console.log('Vercel Request:', { 
+        method: req.method, 
+        url: req.url, 
+        path: pathWithoutQuery,
+        normalizedPath,
+        isTestPath,
+        isAiPath,
+        isDebugPath
+    });
+    
+    // Handle test requests
+    if (req.method === 'GET' && isTestPath) {
+        return res.json({
+            status: 'ok',
+            environment: process.env.NODE_ENV || 'development',
+            hasGroqKey: !!process.env.GROQ_API_KEY,
+            groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
+            isVercel: !!process.env.VERCEL,
+            timestamp: new Date().toISOString(),
+            debug: {
+                url: req.url,
+                path: pathWithoutQuery,
+                normalizedPath
+            }
+        });
+    }
     
     // Handle AI requests
-    if (req.method === 'POST' && pathname === '/api/ai') {
+    if (req.method === 'POST' && isAiPath) {
         try {
-            const { message, sessionId = 'default' } = req.body;
+            const { message, sessionId = 'default' } = req.body || {};
             
             if (!message) {
                 return res.status(400).json({ reply: 'Message is required' });
@@ -54,32 +92,18 @@ export default async function handler(req, res) {
             
             const response = completion.choices[0]?.message?.content || 'No response generated';
             
-            res.json({ reply: response });
+            return res.json({ reply: response });
             
         } catch (error) {
             console.error('Error calling AI:', error);
-            res.status(500).json({ 
+            return res.status(500).json({ 
                 reply: "I'm experiencing technical difficulties. Please try again in a moment." 
             });
         }
-        return;
-    }
-    
-    // Handle test requests
-    if (req.method === 'GET' && pathname === '/api/test') {
-        res.json({
-            status: 'ok',
-            environment: process.env.NODE_ENV || 'development',
-            hasGroqKey: !!process.env.GROQ_API_KEY,
-            groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
-            isVercel: !!process.env.VERCEL,
-            timestamp: new Date().toISOString()
-        });
-        return;
     }
     
     // Handle debug AI requests
-    if (req.method === 'GET' && pathname === '/api/debug-ai') {
+    if (req.method === 'GET' && isDebugPath) {
         try {
             if (!process.env.GROQ_API_KEY) {
                 return res.json({
@@ -107,22 +131,30 @@ export default async function handler(req, res) {
             
             const response = completion.choices[0]?.message?.content || 'No response generated';
             
-            res.json({
+            return res.json({
                 success: true,
                 result: response,
                 timestamp: new Date().toISOString()
             });
             
         } catch (error) {
-            res.json({
+            return res.json({
                 success: false,
                 error: error.message,
                 timestamp: new Date().toISOString()
             });
         }
-        return;
     }
     
-    // Default response
-    res.status(404).json({ error: 'Not found' });
+    // Default response with debug info
+    return res.status(404).json({ 
+        error: 'Not found',
+        debug: {
+            method: req.method,
+            url: req.url,
+            path: pathWithoutQuery,
+            normalizedPath,
+            headers: req.headers
+        }
+    });
 }
