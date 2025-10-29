@@ -13,8 +13,12 @@ export default async function handler(req, res) {
         return;
     }
     
+    // Get the path from the request
+    const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+    console.log('Request:', { method: req.method, url: req.url, pathname });
+    
     // Handle AI requests
-    if (req.method === 'POST' && req.url === '/api/ai') {
+    if (req.method === 'POST' && pathname === '/api/ai') {
         try {
             const { message, sessionId = 'default' } = req.body;
             
@@ -62,7 +66,7 @@ export default async function handler(req, res) {
     }
     
     // Handle test requests
-    if (req.method === 'GET' && req.url === '/api/test') {
+    if (req.method === 'GET' && pathname === '/api/test') {
         res.json({
             status: 'ok',
             environment: process.env.NODE_ENV || 'development',
@@ -75,7 +79,7 @@ export default async function handler(req, res) {
     }
     
     // Handle debug AI requests
-    if (req.method === 'GET' && req.url === '/api/debug-ai') {
+    if (req.method === 'GET' && pathname === '/api/debug-ai') {
         try {
             if (!process.env.GROQ_API_KEY) {
                 return res.json({
