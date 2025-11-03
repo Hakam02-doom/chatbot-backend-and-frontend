@@ -15,25 +15,40 @@ export default async function handler(req, res) {
     
     if (req.method === 'POST') {
         try {
+            console.log('📨 AI Request received:', { 
+                hasBody: !!req.body,
+                bodyType: typeof req.body,
+                bodyKeys: req.body ? Object.keys(req.body) : []
+            });
+            
             const { message, sessionId = 'default' } = req.body || {};
             
             if (!message) {
+                console.error('❌ No message in request');
                 return res.status(400).json({ reply: 'Message is required' });
             }
             
+            console.log('🔑 Checking API key...');
             // Check for API key
             if (!process.env.GROQ_API_KEY) {
                 console.error('❌ GROQ_API_KEY not found');
+                console.error('Environment:', {
+                    NODE_ENV: process.env.NODE_ENV,
+                    VERCEL: !!process.env.VERCEL,
+                    hasKey: !!process.env.GROQ_API_KEY
+                });
                 return res.status(500).json({ 
                     reply: "I'm currently experiencing technical difficulties. Please check that the API key is properly configured." 
                 });
             }
             
+            console.log('✅ GROQ_API_KEY found, initializing client...');
             // Initialize Groq client
             const groq = new Groq({
                 apiKey: process.env.GROQ_API_KEY,
             });
             
+            console.log('🤖 Calling Groq API with message:', message.substring(0, 50));
             // Make API call
             const completion = await groq.chat.completions.create({
                 messages: [
@@ -48,13 +63,19 @@ export default async function handler(req, res) {
             });
             
             const response = completion.choices[0]?.message?.content || 'No response generated';
+            console.log('✅ AI response generated:', response.substring(0, 50));
             
             return res.json({ reply: response });
             
         } catch (error) {
-            console.error('Error calling AI:', error);
+            console.error('❌ Error calling AI:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             return res.status(500).json({ 
-                reply: "I'm experiencing technical difficulties. Please try again in a moment." 
+                reply: `I'm experiencing technical difficulties: ${error.message}. Please try again in a moment.` 
             });
         }
     }
