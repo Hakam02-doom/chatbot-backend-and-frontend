@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "start": "node final-server.js",
-    "prod": "NODE_ENV=production node final-server.js"
+    "prod": "NODE_ENV=production node final-server.js",
+    "build": "echo 'Static files - no build needed'"
   },
   "dependencies": {
     "@tavily/core": "^0.5.12",
