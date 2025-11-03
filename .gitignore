@@ -32,3 +32,13 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Lock files (keep package-lock.json, ignore bun.lock if using npm)
+bun.lock
+yarn.lock
+pnpm-lock.yaml
